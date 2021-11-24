@@ -181,28 +181,25 @@ public:
     /**********************2-ply modify*********************/
 	virtual action take_action(const board& before) {//2-ply
 		int best_op = 0;
-		float best_vs_value = MIN_FLOAT;
 		float best_reward = 0;
+		float best_expectation = 0;
 		board best_afterstate;
 		for(int op : opcode)
         {
             board after = before;
-            float reward = after.slide(op);
+            reward = after.slide(op);
             if(reward == -1) continue;
 
-            float vs_value = board_value(after);
-            if(vs_value + reward > best_vs_value + best_reward)
+            float expectation = put_tile(after);
+            if(expectation > best_expectation)
             {
                 best_op = op;
-                best_vs_value = vs_value;
-                best_afterstate = after;
                 best_reward = reward;
+                best_afterstate = after;
+                best_expectation = expectation;
             }
         }
-        if(best_vs_value != MIN_FLOAT)
-        {
-            history.push_back({best_afterstate, best_reward});
-        }
+        history.push_back({best_afterstate, best_reward});
         return action::slide(best_op);
 	}
 	float put_tile(board& before)

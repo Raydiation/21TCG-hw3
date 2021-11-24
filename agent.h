@@ -19,7 +19,7 @@
 #include "weight.h"
 #include <fstream>
 
-const int MAX_INDEX = 22;// the max tile index could occur.
+const int MAX_INDEX = 25;// the max tile index could occur.
 const int tuple_number = 32;
 const int tuple_length = 6;//4*6
 const long map_size = powl(MAX_INDEX, tuple_length);
@@ -154,7 +154,7 @@ private:
 class player : public weight_agent {
 public:
 	player(const std::string& args = "") : weight_agent("name=dummy role=player " + args),
-		opcode({ 0, 1, 2, 3 }) {}
+		opcode({ 0, 1, 2, 3 }), space({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 }) {}
 
 	unsigned long get_feature(const board& boardstate, const std::vector<int>& pattern)
     {
@@ -178,7 +178,8 @@ public:
         return value;
     }
 
-	virtual action take_action(const board& before) {
+    /**********************2-ply modify*********************/
+	virtual action take_action(const board& before) {//2-ply
 		int best_op = 0;
 		float best_vs_value = MIN_FLOAT;
 		float best_reward = 0;
@@ -188,11 +189,7 @@ public:
             board after = before;
             float reward = after.slide(op);
             if(reward == -1) continue;
-			
-			int empty_cell = count_empty_cell(after.get_tile());
-			int boundary_value = close_to_boundary(after.get_tile());
-			reward = sqrt(reward) * empty_cell * boundary_value;
-            
+
             float vs_value = board_value(after);
             if(vs_value + reward > best_vs_value + best_reward)
             {
@@ -202,33 +199,55 @@ public:
                 best_reward = reward;
             }
         }
-        
         if(best_vs_value != MIN_FLOAT)
         {
             history.push_back({best_afterstate, best_reward});
         }
-        
         return action::slide(best_op);
 	}
+	float put_tile(board& before)
+	{
+	    float expected_value = 0;
+	    float reward = 0;
+	    int empty_position = 0;
+        for (int pos : space)
+        {
+			if (before(pos) != 0) continue;
+			empty_position += 1;
 
-	int count_empty_cell(const board::grid& tile)
-    {
-        int number = 0;
-        for(int i = 0; i < 4; i++)
-            for(int j = 0; j < 4; j++)
-                if(tile[i][j] == 0) number++;
-        return number;
-    }
+			before(pos) = 1;
+			reward = take_action_2th_layer(before);
+			expected_value += reward * 0.9;
 
-    int close_to_boundary(const board::grid& tile)
-    {
-        int outside_numbers = 0;
-        outside_numbers += (2 * (tile[0][0] + tile[0][3] + tile[3][0] + tile[3][3]));
-        outside_numbers += (tile[0][1] + tile [0][2] + tile[3][1] + tile[3][2]);
-        outside_numbers += (tile[1][0] + tile [2][0] + tile[1][3] + tile[2][3]);
-        return outside_numbers;
-    }
-	virtual void close_episode(const std::string& flag = "") 
+			before(pos) = 2;
+			reward = take_action_2th_layer(before);
+			expected_value += reward *0.1;
+
+			before(pos) = 0;
+		}
+		return expected_value / empty_position;
+	}
+	float take_action_2th_layer(const board& before) {
+		float best_vs_value = MIN_FLOAT;
+		float best_reward = 0;
+		for(int op : opcode)
+        {
+            board after = before;
+            float reward = after.slide(op);
+            if(reward == -1) continue;
+
+            float vs_value = board_value(after);
+            if(vs_value + reward > best_vs_value + best_reward)
+            {
+                best_vs_value = vs_value;
+                best_reward = reward;
+            }
+        }
+        return best_reward + best_vs_value;
+	}
+	/**********************2-ply modify*********************/
+
+	virtual void close_episode(const std::string& flag = "")
 	{
     	train_weights(history[history.size()-1].afterstate);//T-1 turn
     	for(int i = history.size() - 2; i >= 0; i--)
@@ -237,8 +256,8 @@ public:
     	}
     	history.clear();
     	return;
-	}	
-	
+	}
+
 	void train_weights(const board& prev_board,const board& next_board,const float &reward)
 	{
 	    float delta = alpha * (reward + board_value(next_board) - board_value(prev_board));
@@ -264,6 +283,7 @@ public:
 	std::vector<state> history;
 private:
 	std::array<int, 4> opcode;
+	std::array<int, 16> space;
 };
 /*
 const std::vector<std::vector<int>> agent::pattern = {

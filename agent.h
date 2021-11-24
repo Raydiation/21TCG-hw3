@@ -187,7 +187,7 @@ public:
 		for(int op : opcode)
         {
             board after = before;
-            reward = after.slide(op);
+            float reward = after.slide(op);
             if(reward == -1) continue;
 
             float expectation = put_tile(after);

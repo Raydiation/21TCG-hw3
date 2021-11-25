@@ -182,7 +182,7 @@ public:
     /**********************2-ply modify*********************/
 	virtual action take_action(const board& before) {//2-ply
 		int best_op = 0;
-		float best_reward = 0;
+		int best_reward = 0;
 		float best_expectation = MIN_FLOAT;
 		board best_afterstate;
 		for(int op : opcode)
@@ -206,8 +206,7 @@ public:
 	}
 	float put_tile(const board& before, const int& depth)
 	{
-		if(depth == 0)
-			return board_value(before);
+		if(depth == 0) return board_value(before);
 	    float expectation = 0;
 	    float empty_grid = 0;
         for (int pos : space)
@@ -218,12 +217,12 @@ public:
 			for(int tile : {1, 2})
 			{
 				board after = before;
-				if(action::place(tile, pos).apply(after) != -1)
+				after(pos) = tile;
 				{
 				    if(tile == 1)
                         expectation += move_simulation(after, depth) * 0.9;
                     else
-                        expectation += move_simulation(after, depth) * 0.1
+                        expectation += move_simulation(after, depth) * 0.1;
 				}
 			}
 		}
@@ -285,7 +284,7 @@ public:
 	}
 	struct state{
 		board afterstate;
-		float reward;
+		int reward;
 	};
 	std::vector<state> history;
 private:

@@ -182,7 +182,7 @@ public:
 	virtual action take_action(const board& before) {//2-ply
 		int best_op = 0;
 		float best_reward = 0;
-		float best_expectation = 0;
+		float best_expectation = MIN_FLOAT;
 		board best_afterstate;
 		for(int op : opcode)
         {
@@ -199,7 +199,8 @@ public:
                 best_expectation = expectation;
             }
         }
-        history.push_back({best_afterstate, best_reward});
+        if(best_expectation != MIN_FLOAT)
+            history.push_back({best_afterstate, best_reward});
         return action::slide(best_op);
 	}
 	float put_tile(board& before)
@@ -214,10 +215,12 @@ public:
 
 			before(pos) = 1;
 			reward = take_action_2th_layer(before);
+			if(reward == MIN_FLOAT) return reward;
 			expected_value += reward * 0.9;
 
 			before(pos) = 2;
 			reward = take_action_2th_layer(before);
+			if(reward == MIN_FLOAT) return reward;
 			expected_value += reward *0.1;
 
 			before(pos) = 0;
@@ -226,7 +229,6 @@ public:
 	}
 	float take_action_2th_layer(const board& before) {
 		float best_vs_value = MIN_FLOAT;
-		float best_reward = 0;
 		for(int op : opcode)
         {
             board after = before;
@@ -234,13 +236,12 @@ public:
             if(reward == -1) continue;
 
             float vs_value = board_value(after);
-            if(vs_value + reward > best_vs_value + best_reward)
+            if(vs_value + reward > best_vs_value)
             {
-                best_vs_value = vs_value;
-                best_reward = reward;
+                best_vs_value = vs_value + reward;
             }
         }
-        return best_reward + best_vs_value;
+        return best_vs_value;
 	}
 	/**********************2-ply modify*********************/
 

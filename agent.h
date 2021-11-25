@@ -19,11 +19,12 @@
 #include "weight.h"
 #include <fstream>
 
-const int MAX_INDEX = 25;// the max tile index could occur.
+const int MAX_INDEX = 21;// the max tile index could occur.
 const int tuple_number = 32;
 const int tuple_length = 6;//4*6
 const long map_size = powl(MAX_INDEX, tuple_length);
 const float MIN_FLOAT = -std::numeric_limits<float>::max();
+const float lembda = 0.5;
 
 class agent {
 public:
@@ -190,8 +191,8 @@ public:
             float reward = after.slide(op);
             if(reward == -1) continue;
 
-            float expectation = put_tile(after);
-            if(expectation > best_expectation)
+            float expectation = put_tile(after, 1);
+            if(expectation + reward > best_expectation + best_reward)
             {
                 best_op = op;
                 best_reward = reward;
@@ -203,75 +204,78 @@ public:
             history.push_back({best_afterstate, best_reward});
         return action::slide(best_op);
 	}
-	float put_tile(board& before)
+	float put_tile(const board& before, const int& depth)
 	{
-	    float expected_value = 0;
-	    float reward = 0;
-	    int empty_position = 0;
+		if(depth == 0)
+			return board_value(before);
+	    float expectation = 0;
+	    int empty_grid = 0;
         for (int pos : space)
         {
 			if (before(pos) != 0) continue;
-			empty_position += 1;
-
-			before(pos) = 1;
-			reward = take_action_2th_layer(before);
-			if(reward == MIN_FLOAT) return reward;
-			expected_value += reward * 0.9;
-
-			before(pos) = 2;
-			reward = take_action_2th_layer(before);
-			if(reward == MIN_FLOAT) return reward;
-			expected_value += reward *0.1;
-
-			before(pos) = 0;
+			empty_grid += 1;
+			
+			for(int tile:{1,2})
+			{
+				board after = before;
+				if(action::place(tile, pos).apply(after) != -1)
+				{
+					expectation += move_simulation(after, depth) * (1.7 - 0.8 * tile);
+				}
+			}
 		}
-		return expected_value / empty_position;
+		expectation /= empty_grid;
+		return expectation;
 	}
-	float take_action_2th_layer(const board& before) {
-		float best_vs_value = MIN_FLOAT;
+	float move_simulation(const board& before, const int& depth) {
+		float expectation;
+		float best_expectation = MIN_FLOAT;
 		for(int op : opcode)
         {
             board after = before;
-            float reward = after.slide(op);
+            int reward = after.slide(op);
             if(reward == -1) continue;
 
-            float vs_value = board_value(after);
-            if(vs_value + reward > best_vs_value)
+            expectation = put_tile(after, depth - 1);
+            if(expectation + reward > best_expectation)
             {
-                best_vs_value = vs_value + reward;
+                best_expectation = expectation + reward;
             }
         }
-        return best_vs_value;
+        return (best_expectation == MIN_FLOAT) ? 0 : best_expectation;
 	}
 	/**********************2-ply modify*********************/
 
 	virtual void close_episode(const std::string& flag = "")
 	{
-    	train_weights(history[history.size()-1].afterstate);//T-1 turn
+    	float history_value = 0;
+    	train_weights(history[history.size()-1].afterstate, history_value);//T-1 turn
     	for(int i = history.size() - 2; i >= 0; i--)
     	{
-    		train_weights(history[i].afterstate, history[i+1].afterstate, history[i+1].reward);
+    		train_weights(history[i].afterstate, history[i+1].afterstate, history[i+1].reward, history_value);
     	}
     	history.clear();
     	return;
 	}
 
-	void train_weights(const board& prev_board,const board& next_board,const float &reward)
+	void train_weights(const board& prev_board,const board& next_board,const float &reward, float &history_value)
 	{
-	    float delta = alpha * (reward + board_value(next_board) - board_value(prev_board));
+	    float delta =alpha * (reward + board_value(next_board) - board_value(prev_board));
+	   	history_value = delta * (1.0 - lembda) + history_value * lembda;
 	    for(int i = 0; i < tuple_number; i++)
         {
-        	net[i/8][get_feature(prev_board, pattern[i])] += delta;
+        	net[i/8][get_feature(prev_board, pattern[i])] += history_value;
         }
         return;
 	}
-	void train_weights(const board& final_board)
+	void train_weights(const board& final_board, float& history_value)
 	{
         float delta = -alpha * board_value(final_board);//TD target is 0;
         for(int i = 0; i < tuple_number; i++)
         {
         	net[i/8][get_feature(final_board, pattern[i])] += delta;
         }
+        history_value = delta;
         return;
 	}
 	struct state{

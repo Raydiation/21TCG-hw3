@@ -188,7 +188,7 @@ public:
 		for(int op : opcode)
         {
             board after = before;
-            float reward = after.slide(op);
+            int reward = after.slide(op);
             if(reward == -1) continue;
 
             float expectation = put_tile(after, 1);
@@ -209,18 +209,21 @@ public:
 		if(depth == 0)
 			return board_value(before);
 	    float expectation = 0;
-	    int empty_grid = 0;
+	    float empty_grid = 0;
         for (int pos : space)
         {
 			if (before(pos) != 0) continue;
 			empty_grid += 1;
-			
-			for(int tile:{1,2})
+
+			for(int tile : {1, 2})
 			{
 				board after = before;
 				if(action::place(tile, pos).apply(after) != -1)
 				{
-					expectation += move_simulation(after, depth) * (1.7 - 0.8 * tile);
+				    if(tile == 1)
+                        expectation += move_simulation(after, depth) * 0.9;
+                    else
+                        expectation += move_simulation(after, depth) * 0.1
 				}
 			}
 		}
@@ -230,6 +233,7 @@ public:
 	float move_simulation(const board& before, const int& depth) {
 		float expectation;
 		float best_expectation = MIN_FLOAT;
+		bool change = 0;
 		for(int op : opcode)
         {
             board after = before;
@@ -240,9 +244,10 @@ public:
             if(expectation + reward > best_expectation)
             {
                 best_expectation = expectation + reward;
+                change = 1;
             }
         }
-        return (best_expectation == MIN_FLOAT) ? 0 : best_expectation;
+        return change ? best_expectation : 0;
 	}
 	/**********************2-ply modify*********************/
 

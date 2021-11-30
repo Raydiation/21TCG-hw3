@@ -19,7 +19,7 @@
 #include "weight.h"
 #include <fstream>
 
-const int MAX_INDEX = 25;// the max tile index could occur.
+const int MAX_INDEX = 23;// the max tile index could occur.
 const int tuple_number = 32;
 const int tuple_length = 6;//4*6
 const long map_size = powl(MAX_INDEX, tuple_length);
@@ -96,20 +96,21 @@ public:
 
 protected:
 	virtual void init_weights(const std::string& info) {
-	    net.emplace_back(map_size);
+	    /*net.emplace_back(map_size);
 	    for(int fix = 0; fix < 6; fix++)
         {
             for(int large_tile = 20; large_tile < MAX_INDEX; large_tile++)
             {
                 set_large_tile(fix, 0, unsigned long(large_tile) * powl(MAX_INDEX, fix));
             }
-        }
-		for(int i = 1; i < 4; i++)
+        }*/
+		for(int i = 0; i < 4; i++)
         {
             net.emplace_back(map_size); // create an empty weight table with size map_size
-            net[i] = net[0];
+            //net[i] = net[0];
         }
 	}
+	/*
 	void set_large_tile(const int& fix, int current_index, unsigned long encode)
 	{
 	    if(current_index == fix)
@@ -128,6 +129,7 @@ protected:
         }
         return;
 	}
+	*/
 	virtual void load_weights(const std::string& path) {
 		std::ifstream in(path, std::ios::in | std::ios::binary);
 		if (!in.is_open()) std::exit(-1);

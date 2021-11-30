@@ -19,12 +19,12 @@
 #include "weight.h"
 #include <fstream>
 
-const int MAX_INDEX = 23;// the max tile index could occur.
+const int MAX_INDEX = 20;// the max tile index could occur.
 const int tuple_number = 32;
 const int tuple_length = 6;//4*6
 const long map_size = powl(MAX_INDEX, tuple_length);
 const float MIN_FLOAT = -std::numeric_limits<float>::max();
-const float epsilon = float(1.0) / std::numeric_limits<float>::max();
+const float epsilon = 1e-5;
 const float lembda = 0.5;
 
 class agent {
@@ -330,7 +330,7 @@ public:
         history_value = -alpha * delta;
         for(int i = 0; i < tuple_number; i++)
         {
-            long feature = get_feature(prev_board, pattern[i]);
+            long feature = get_feature(final_board, pattern[i]);
             float learning_rate = fabs(net_E[i][feature]) / net_A[i][feature];
         	net[i/8][get_feature(final_board, pattern[i])] += history_value * learning_rate;
         	net_E[i][feature] += delta;

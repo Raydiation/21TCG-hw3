@@ -24,6 +24,7 @@ const int tuple_number = 32;
 const int tuple_length = 6;//4*6
 const long map_size = powl(MAX_INDEX, tuple_length);
 const float MIN_FLOAT = -std::numeric_limits<float>::max();
+const float epsilon = float(1.0) / std::numeric_limits<float>::max();
 const float lembda = 0.5;
 
 class agent {
@@ -104,10 +105,20 @@ protected:
                 set_large_tile(fix, 0, unsigned long(large_tile) * powl(MAX_INDEX, fix));
             }
         }*/
+        net_A.emplace_back(map_size);
+        for(int i = 0; i < net_A[0].size(); i++)
+            net_A[0][i] = epsilon;
+
+        for(int i = 1; i < 4; i++)
+        {
+            net_A.emplace_back(map_size);
+            net_A[i] = net_A[0];
+        }
 		for(int i = 0; i < 4; i++)
         {
             net.emplace_back(map_size); // create an empty weight table with size map_size
-            //net[i] = net[0];
+            net_E.emplace_back(map_size);
+            net_E[i] = net_E[0];
         }
 	}
 	/*
@@ -135,21 +146,27 @@ protected:
 		if (!in.is_open()) std::exit(-1);
 		uint32_t size;
 		in.read(reinterpret_cast<char*>(&size), sizeof(size));
-		net.resize(size);
+		net.resize(size / 3);
+        net_A.resize(size / 3);
+        net_E.resize(size / 3);
 		for (weight& w : net) in >> w;
 		in.close();
 	}
 	virtual void save_weights(const std::string& path) {
 		std::ofstream out(path, std::ios::out | std::ios::binary | std::ios::trunc);
 		if (!out.is_open()) std::exit(-1);
-		uint32_t size = net.size();
+		uint32_t size = net.size() * 3;
 		out.write(reinterpret_cast<char*>(&size), sizeof(size));
 		for (weight& w : net) out << w;
+		for (weight& w : net_A) out << w;
+		for (weight& w : net_E) out << w;
 		out.close();
 	}
 
 protected:
 	std::vector<weight> net;
+	std::vector<weight> net_E;
+	std::vector<weight> net_A;
     float alpha;
 };
 
@@ -295,20 +312,29 @@ public:
 
 	void train_weights(const board& prev_board,const board& next_board,const float &reward, float &history_value)
 	{
-	    float delta =alpha * (board_value(next_board) - board_value(prev_board));
-	   	history_value = reward + delta * (1.0 - lembda) + history_value * lembda;
+	    float delta = reward + board_value(next_board) - board_value(prev_board);
+	   	history_value = alpha * delta * (1.0 - lembda) + history_value * lembda;
 	    for(int i = 0; i < tuple_number; i++)
         {
-        	net[i/8][get_feature(prev_board, pattern[i])] += history_value;
+            long feature = get_feature(prev_board, pattern[i]);
+            float learning_rate = fabs(net_E[i][feature]) / net_A[i][feature];
+        	net[i/8][get_feature(prev_board, pattern[i])] += history_value * learning_rate;
+        	net_E[i][feature] += delta;
+        	net_A[i][feature] += fabs(delta);
         }
         return;
 	}
 	void train_weights(const board& final_board, float& history_value)
 	{
-        float delta = -alpha * board_value(final_board);//TD target is 0;
+        float delta = board_value(final_board);//TD target is 0;
+        history_value = -alpha * delta;
         for(int i = 0; i < tuple_number; i++)
         {
-        	net[i/8][get_feature(final_board, pattern[i])] += delta;
+            long feature = get_feature(prev_board, pattern[i]);
+            float learning_rate = fabs(net_E[i][feature]) / net_A[i][feature];
+        	net[i/8][get_feature(final_board, pattern[i])] += history_value * learning_rate;
+        	net_E[i][feature] += delta;
+        	net_A[i][feature] += fabs(delta);
         }
         history_value = delta;
         return;

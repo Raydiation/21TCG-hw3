@@ -293,8 +293,8 @@ public:
 
 	void train_weights(const board& prev_board,const board& next_board,const float &reward, float &history_value)
 	{
-	    float delta =alpha * (reward + board_value(next_board) - board_value(prev_board));
-	   	history_value = delta * (1.0 - lembda) + history_value * lembda;
+	    float delta =alpha * (board_value(next_board) - board_value(prev_board));
+	   	history_value = reward + delta * (1.0 - lembda) + history_value * lembda;
 	    for(int i = 0; i < tuple_number; i++)
         {
         	net[i/8][get_feature(prev_board, pattern[i])] += history_value;

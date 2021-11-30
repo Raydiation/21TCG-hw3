@@ -111,14 +111,14 @@ protected:
 
         for(int i = 1; i < 4; i++)
         {
-            net_A.emplace_back(map_size);
+            net_A.emplace_back(1);
             net_A[i] = net_A[0];
         }
 		for(int i = 0; i < 4; i++)
         {
             net.emplace_back(map_size); // create an empty weight table with size map_size
-            net_E.emplace_back(map_size);
-            net_E[i] = net_E[0];
+            net_E.emplace_back(1);
+            net_E[i] = net_A[0];
         }
 	}
 	/*
@@ -150,12 +150,14 @@ protected:
         net_A.resize(size / 3);
         net_E.resize(size / 3);
 		for (weight& w : net) in >> w;
+		for (weight& w : net_A) in >> w;
+		for (weight& w : net_E) in >> w;
 		in.close();
 	}
 	virtual void save_weights(const std::string& path) {
 		std::ofstream out(path, std::ios::out | std::ios::binary | std::ios::trunc);
 		if (!out.is_open()) std::exit(-1);
-		uint32_t size = net.size() * 3;
+		uint32_t size = net.size() + net_A.size() + net_E.size();
 		out.write(reinterpret_cast<char*>(&size), sizeof(size));
 		for (weight& w : net) out << w;
 		for (weight& w : net_A) out << w;
@@ -300,7 +302,7 @@ public:
 
 	virtual void close_episode(const std::string& flag = "")
 	{
-    	float history_value = 0;
+		float history_value = 0;
     	train_weights(history[history.size()-1].afterstate, history_value);//T-1 turn
     	for(int i = history.size() - 2; i >= 0; i--)
     	{
@@ -317,10 +319,10 @@ public:
 	    for(int i = 0; i < tuple_number; i++)
         {
             long feature = get_feature(prev_board, pattern[i]);
-            float learning_rate = fabs(net_E[i][feature]) / net_A[i][feature];
+            float learning_rate = fabs(net_E[i/8][feature]) / net_A[i/8][feature];
         	net[i/8][get_feature(prev_board, pattern[i])] += history_value * learning_rate;
-        	net_E[i][feature] += delta;
-        	net_A[i][feature] += fabs(delta);
+        	net_E[i/8][feature] += delta / 8;
+        	net_A[i/8][feature] += fabs(delta) / 8;
         }
         return;
 	}
@@ -331,12 +333,11 @@ public:
         for(int i = 0; i < tuple_number; i++)
         {
             long feature = get_feature(final_board, pattern[i]);
-            float learning_rate = fabs(net_E[i][feature]) / net_A[i][feature];
+            float learning_rate = fabs(net_E[i/8][feature]) / net_A[i/8][feature];
         	net[i/8][get_feature(final_board, pattern[i])] += history_value * learning_rate;
-        	net_E[i][feature] += delta;
-        	net_A[i][feature] += fabs(delta);
+        	net_E[i/8][feature] += delta / 8;
+        	net_A[i/8][feature] += fabs(delta) / 8;
         }
-        history_value = delta;
         return;
 	}
 	struct state{

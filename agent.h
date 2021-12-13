@@ -19,7 +19,7 @@
 #include "weight.h"
 #include <fstream>
 
-const int MAX_INDEX = 20;// the max tile index could occur.
+const int MAX_INDEX = 23;// the max tile index could occur.
 const int tuple_number = 32;
 const int tuple_length = 6;//4*6
 const long map_size = powl(MAX_INDEX, tuple_length);
@@ -97,50 +97,45 @@ public:
 
 protected:
 	virtual void init_weights(const std::string& info) {
-	    /*net.emplace_back(map_size);
-	    for(int fix = 0; fix < 6; fix++)
-        {
-            for(int large_tile = 20; large_tile < MAX_INDEX; large_tile++)
-            {
-                set_large_tile(fix, 0, unsigned long(large_tile) * powl(MAX_INDEX, fix));
-            }
-        }*/
-        net_A.emplace_back(map_size);
-        for(int i = 0; i < net_A[0].size(); i++)
-            net_A[0][i] = epsilon;
-
-        for(int i = 1; i < 4; i++)
-        {
-            net_A.emplace_back(1);
-            net_A[i] = net_A[0];
-        }
+	    net.emplace_back(map_size);
+	    for(int i1=0;i1<23;i1++){
+			for(int i2=0;i2<23;i2++){
+				for(int i3=0;i3<23;i3++){
+					for(int i4=0;i4<23;i4++){
+						for(int i5=0;i5<23;i5++){
+							for(int i6=20;i6<23;i6++){
+								net[0][((((i1*23+i2)*23+i3)*23+i4)*23+i5)*23+i6] = 1000;
+								net[0][((((i1*23+i2)*23+i3)*23+i4)*23+i6)*23+i5] = 1000;
+								net[0][((((i1*23+i2)*23+i3)*23+i6)*23+i5)*23+i4] = 1000;
+								net[0][((((i1*23+i2)*23+i6)*23+i4)*23+i5)*23+i3] = 1000;
+								net[0][((((i1*23+i6)*23+i3)*23+i4)*23+i5)*23+i2] = 1000;
+								net[0][((((i6*23+i2)*23+i3)*23+i4)*23+i5)*23+i1] = 1000;
+							}
+						}
+					}
+				}
+			}
+		}
+      	net_A.emplace_back(map_size);
+      	for(int i = 0; i < net_A[0].size(); i++)
+      		net_A[0][i] = epsilon;
+		
+      	for(int i = 1; i < 4; i++)
+      	{
+      		net_A.emplace_back(1);
+	      	net_A[i] = net_A[0];
+	  	}
+		for(int i = 1; i < 4; i++)
+      	{
+          	net.emplace_back(map_size); // create an empty weight table with size map_size
+         	net[i] = net[0];
+	 	}
 		for(int i = 0; i < 4; i++)
-        {
-            net.emplace_back(map_size); // create an empty weight table with size map_size
-            net_E.emplace_back(1);
-            net_E[i] = net_A[0];
-        }
+		{
+			net_E.emplace_back(1);
+			net_E[i] = net_A[0];
+		}
 	}
-	/*
-	void set_large_tile(const int& fix, int current_index, unsigned long encode)
-	{
-	    if(current_index == fix)
-        {
-            set_large_tile(fix, current_index + 1, encode);
-            return;
-        }
-        if(current_index == 6)
-        {
-            net[0].value[encode] = 100;
-            return;
-        }
-        for(int i = 0; i < MAX_INDEX; i++)
-        {
-            set_large_tile(fix, current_index + 1, encode + unsigned long(i) * powl(MAX_INDEX, current_index));
-        }
-        return;
-	}
-	*/
 	virtual void load_weights(const std::string& path) {
 		std::ifstream in(path, std::ios::in | std::ios::binary);
 		if (!in.is_open()) std::exit(-1);
@@ -349,19 +344,7 @@ private:
 	std::array<int, 4> opcode;
 	std::array<int, 16> space;
 };
-/*
-const std::vector<std::vector<int>> agent::pattern = {
-	{3,2,1,0,4,5},
-	{0,4,8,12,13,9},
-	{12,13,14,15,11,10},
-	{15,11,7,3,2,6},
-	{0,1,2,3,7,6},
-	{12,8,4,0,1,5},
-	{15,14,13,12,8,9},
-	{3,7,11,15,14,10}//outter six type
-};
 
-*/
 const std::vector<std::vector<int>> agent::pattern = {
 	{3,2,1,0,4,5},
 	{0,4,8,12,13,9},
@@ -400,29 +383,3 @@ const std::vector<std::vector<int>> agent::pattern = {
 	{13,14,10,6,5,9}//inner 2*3 rectangle
 };
 
-/*
-//
-const std::vector<std::vector<int>> agent::pattern = {
-    {0,1,2,3},
-    {12,13,14,15},
-    {0,4,8,12},
-    {3,7,11,15},//outline
-
-    {4,5,6,7},
-    {8,9,10,11},
-    {1,5,9,13},
-    {2,6,10,14},//inline
-
-    {0,1,4,5},
-    {2,3,6,7},
-    {8,9,12,13},
-    {10,11,14,15},//corner rectangle
-
-    {1,2,5,6},
-    {4,5,8,9},
-    {6,7,10,11},
-    {9,10,13,14},//side rectangle
-
-    {5,6,9,10}//center rectangle
-};
-*/

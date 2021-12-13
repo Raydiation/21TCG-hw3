@@ -320,7 +320,7 @@ public:
         {
             long feature = get_feature(prev_board, pattern[i]);
             float learning_rate = fabs(net_E[i/8][feature]) / net_A[i/8][feature];
-        	net[i/8][get_feature(prev_board, pattern[i])] += history_value * learning_rate;
+        	net[i/8][get_feature(prev_board, pattern[i])] += history_value * learning_rate / 8;
         	net_E[i/8][feature] += delta / 8;
         	net_A[i/8][feature] += fabs(delta) / 8;
         }
@@ -334,7 +334,7 @@ public:
         {
             long feature = get_feature(final_board, pattern[i]);
             float learning_rate = fabs(net_E[i/8][feature]) / net_A[i/8][feature];
-        	net[i/8][get_feature(final_board, pattern[i])] += history_value * learning_rate;
+        	net[i/8][get_feature(final_board, pattern[i])] += history_value * learning_rate / 8;
         	net_E[i/8][feature] += delta / 8;
         	net_A[i/8][feature] += fabs(delta) / 8;
         }

@@ -98,18 +98,18 @@ public:
 protected:
 	virtual void init_weights(const std::string& info) {
 	    net.emplace_back(map_size);
-	    for(int i1=0;i1<23;i1++){
-			for(int i2=0;i2<23;i2++){
-				for(int i3=0;i3<23;i3++){
-					for(int i4=0;i4<23;i4++){
-						for(int i5=0;i5<23;i5++){
-							for(int i6=20;i6<23;i6++){
-								net[0][((((i1*23+i2)*23+i3)*23+i4)*23+i5)*23+i6] = 1000;
-								net[0][((((i1*23+i2)*23+i3)*23+i4)*23+i6)*23+i5] = 1000;
-								net[0][((((i1*23+i2)*23+i3)*23+i6)*23+i5)*23+i4] = 1000;
-								net[0][((((i1*23+i2)*23+i6)*23+i4)*23+i5)*23+i3] = 1000;
-								net[0][((((i1*23+i6)*23+i3)*23+i4)*23+i5)*23+i2] = 1000;
-								net[0][((((i6*23+i2)*23+i3)*23+i4)*23+i5)*23+i1] = 1000;
+	    for(int i1=0;i1<MAX_INDEX;i1++){
+			for(int i2=0;i2<MAX_INDEX;i2++){
+				for(int i3=0;i3<MAX_INDEX;i3++){
+					for(int i4=0;i4<MAX_INDEX;i4++){
+						for(int i5=0;i5<MAX_INDEX;i5++){
+							for(int i6=20;i6<MAX_INDEX;i6++){
+								net[0][((((i1*MAX_INDEX+i2)*MAX_INDEX+i3)*MAX_INDEX+i4)*MAX_INDEX+i5)*MAX_INDEX+i6] = 5000;
+								net[0][((((i1*MAX_INDEX+i2)*MAX_INDEX+i3)*MAX_INDEX+i4)*MAX_INDEX+i6)*MAX_INDEX+i5] = 5000;
+								net[0][((((i1*MAX_INDEX+i2)*MAX_INDEX+i3)*MAX_INDEX+i6)*MAX_INDEX+i5)*MAX_INDEX+i4] = 5000;
+								net[0][((((i1*MAX_INDEX+i2)*MAX_INDEX+i6)*MAX_INDEX+i4)*MAX_INDEX+i5)*MAX_INDEX+i3] = 5000;
+								net[0][((((i1*MAX_INDEX+i6)*MAX_INDEX+i3)*MAX_INDEX+i4)*MAX_INDEX+i5)*MAX_INDEX+i2] = 5000;
+								net[0][((((i6*MAX_INDEX+i2)*MAX_INDEX+i3)*MAX_INDEX+i4)*MAX_INDEX+i5)*MAX_INDEX+i1] = 5000;
 							}
 						}
 					}
@@ -119,7 +119,7 @@ protected:
       	net_A.emplace_back(map_size);
       	for(int i = 0; i < net_A[0].size(); i++)
       		net_A[0][i] = epsilon;
-		
+
       	for(int i = 1; i < 4; i++)
       	{
       		net_A.emplace_back(1);
@@ -127,7 +127,7 @@ protected:
 	  	}
 		for(int i = 1; i < 4; i++)
       	{
-          	net.emplace_back(map_size); // create an empty weight table with size map_size
+          	net.emplace_back(1); // create an empty weight table with size map_size
          	net[i] = net[0];
 	 	}
 		for(int i = 0; i < 4; i++)
